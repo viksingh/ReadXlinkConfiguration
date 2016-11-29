@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,11 +23,20 @@ import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbException;
@@ -50,11 +60,23 @@ implements ActionListener  {
     JTextField txtUser;
     JTextField txtPassword;
     JTextField txtAttribute;
-
+    JPasswordField passwordField;
+    JTabbedPane tabbedPane;
+    List<XlinkData> AdapterPropertiesList = new ArrayList<XlinkData>();
+    static JFrame frame ;
+    static JFrame resultFrame ;
+    JPanel card1;
+    JPanel card2;
+    JPanel card3;
+    static Container globalPane;
+    
     String domain;
     String user;
     String password;
     String attribute;
+    
+    Boolean resultPane = false;
+    
     
     @SuppressWarnings("serial")
 	public void addComponentToPane(Container pane) {
@@ -78,24 +100,27 @@ implements ActionListener  {
     	        
     	        domain = txtDomain.getText(); 
     	        user = txtUser.getText();
-    	        password = txtPassword.getText();
+    	        password = passwordField.getText();
     	        attribute = txtAttribute.getText();
+    	        
+//    	        System.out.println("Password is" + password);
     	        
     	      }
     	    };
     	
     	
-        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane = new JTabbedPane();
 
         
         fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        fc.setSelectedFile(new File("C:\\Temp\\xlinklist_small.txt"));
         
         openButton = new JButton("Upload list of servers...");
         openButton.addActionListener(this);        
         
         //Create the "cards".
-        JPanel card1 = new JPanel() {
+        card1 = new JPanel() {
             //Make the panel wider than it really needs, so
             //the window's wide enough for the tabs to stay
             //in one row.
@@ -107,9 +132,9 @@ implements ActionListener  {
         };
         card1.add(openButton);
 
-        JPanel card2 = new JPanel(new GridLayout(0,1,2,2));
+        card2 = new JPanel(new GridLayout(0,1,2,2));
         
-        card2.add(new Label("DOMAIN"));
+        card2.add(new Label("Domain"));
         txtDomain = new JTextField("NESTLE", 30); 
         card2.add(txtDomain);
         txtDomain.addKeyListener(keyListener);
@@ -120,20 +145,23 @@ implements ActionListener  {
         txtUser.addKeyListener(keyListener);
 
         card2.add(new Label("Password"));
-        txtPassword = new JTextField("password", 30);
-        card2.add(txtPassword);
-        txtPassword.addKeyListener(keyListener);
+        passwordField = new JPasswordField("Saregama11@", 11);
+        passwordField.setEchoChar('*');
+        card2.add(passwordField);
+        passwordField.addKeyListener(keyListener);
 
+        
 
         card2.add(new Label("Attribute"));
         txtAttribute = new JTextField("XI.XFileTargetURL", 30);
         card2.add(txtAttribute);
         txtAttribute.addKeyListener(keyListener);
 
-        tabbedPane.addTab(BUTTONPANEL, card1);
+        
         tabbedPane.addTab(TEXTPANEL, card2);
-
-        pane.add(tabbedPane, BorderLayout.CENTER);
+        tabbedPane.addTab(BUTTONPANEL, card1);
+        globalPane.add(tabbedPane, BorderLayout.CENTER);
+        
     }
 
     /**
@@ -143,16 +171,21 @@ implements ActionListener  {
      */
     private static void createAndShowGUI() {
         //Create and set up the window.
-        JFrame frame = new JFrame("Xlink Remote Properties Read");
+        frame = new JFrame("Xlink Remote Properties Read");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Create and set up the content pane.
-        XlinkPropReadGUI demo = new XlinkPropReadGUI();
-        demo.addComponentToPane(frame.getContentPane());
+        XlinkPropReadGUI xlinkProcessing = new XlinkPropReadGUI();
+        globalPane = frame.getContentPane();
+        xlinkProcessing.addComponentToPane(globalPane);
 
         //Display the window.
         frame.pack();
         frame.setVisible(true);
+        
+        
+        
+        
     }
 
     public static void main(String[] args) {
@@ -204,8 +237,9 @@ implements ActionListener  {
 					String line1 = "";
 
 					while ((line1 = br1.readLine()) != null) {
+						String server = line1.trim();
 
-						System.out.println("***Checking server: " + line1.trim());
+						System.out.println("***Checking server: " + server );
 
 						List<String> ActiveAdapterList = new ArrayList<String>();
 						String url = "smb://" + line1.trim() + XL0_PATH;
@@ -246,6 +280,12 @@ implements ActionListener  {
 												System.out.println(fileName);
 												System.out.println(line);
 												
+								XlinkData adapterProperty = new XlinkData();												
+								adapterProperty.setServer(server);
+								adapterProperty.setAdapter(fileName);
+								adapterProperty.setAttribute1(line.replace(attribute+"=",""));
+
+								AdapterPropertiesList.add(adapterProperty);
 											}
 											break;
 										}
@@ -259,11 +299,13 @@ implements ActionListener  {
 							}
 						} catch (Exception e1) {
 							System.out.println("Error connecting server: " + line1.trim());
+							
 						}
 
 					}					
 					
-					
+
+		        
 					
 					
 				} catch (FileNotFoundException e1) {
@@ -279,7 +321,65 @@ implements ActionListener  {
             }
 //            log.setCaretPosition(log.getDocument().getLength());
         } 		
+        System.out.println("Showing Result: " );		
+		resultPane = true;
+		frame.getContentPane().remove(frame);
 		
+		globalPane.remove(tabbedPane);
+		SwingUtilities.updateComponentTreeUI(frame);
+		
+		
+		
+		String col[] = {"Server" , "Adapter" , "Attribute"};
+		DefaultTableModel tableModel = new DefaultTableModel(col, 0);
+		
+		final JTable table = new JTable(tableModel);
+		XlinkData adapterProperty = new XlinkData();		
+		
+		for (int i = 0; i < AdapterPropertiesList.size(); i++){
+			String localServer = AdapterPropertiesList.get(i).getServer();
+			String localAdapter = AdapterPropertiesList.get(i).getAdapter();
+			String localAttribute = AdapterPropertiesList.get(i).getAttribute1();
+			
+			Object data[] = {localServer,localAdapter,localAttribute};
+			tableModel.addRow(  data);
+			
+		}
+        table.setPreferredScrollableViewportSize(table.getPreferredSize());
+        table.setFillsViewportHeight(true);	
+        
+        table.getColumnModel().getColumn(0).setMinWidth(10);
+        table.getColumnModel().getColumn(1).setMinWidth(50);
+        table.getColumnModel().getColumn(2).setMinWidth(150);
+        table.getColumnModel().getColumn(2).setMaxWidth(Integer.MAX_VALUE);
+        frame.pack();
+        
+        
+		JMenuBar menuBar = new JMenuBar();
+        JMenu menu = new JMenu("Menu");
+        menuBar.add(menu);
+        JMenuItem item = new JMenuItem("Export Data");
+        item.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+            	ExporttoExcel(table,new File("C:\\Temp\\xlink_properties.csv"));
+            	
+            	
+            	
+            }
+        });
+        menu.add(item);
+        frame.setJMenuBar(menuBar);
+
+
+		
+		JScrollPane scrollPane = new JScrollPane(table);		
+		frame.add(scrollPane, BorderLayout.CENTER);
+	    frame.setSize(300, 150);
+	    frame.pack();
+	    frame.setVisible(true);	
+	    
 		
 	}
 
@@ -315,4 +415,51 @@ implements ActionListener  {
 
 		}
 
-}
+		public void ExporttoExcel(JTable table, File file){
+		    
+			TableModel model = table.getModel();
+	    	JFileChooser chooser = new JFileChooser();
+	        chooser.setCurrentDirectory(new File("C://Temp/"));
+	        int retrival = chooser.showSaveDialog(null);		
+	        if (retrival == JFileChooser.APPROVE_OPTION) {
+	        	
+                try {
+					FileWriter fw = new FileWriter(chooser.getSelectedFile()+".txt");
+	                for(int i = 0; i < model.getColumnCount(); i++){
+			            fw.write(model.getColumnName(i) + "\t");
+			        }		              
+		            fw.write("\n");
+		            
+			        for(int i=0; i< model.getRowCount(); i++) {
+			            for(int j=0; j < model.getColumnCount(); j++) {
+			                fw.write(model.getValueAt(i,j).toString()+",");
+			            }
+			            fw.write("\n");
+			        }
+	                
+			        fw.close();					
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	        	
+	        	
+	        
+	        }
+			
+			
+		     
+		                
+		                
+		                
+		        }
+		        
+		    }
+		    
+		    	
+
+		       
+
+
+
+		    
