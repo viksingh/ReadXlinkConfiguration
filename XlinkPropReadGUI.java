@@ -7,6 +7,8 @@ import java.awt.GridLayout;
 import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.BufferedReader;
@@ -17,10 +19,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.AbstractButton;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -69,11 +74,15 @@ implements ActionListener  {
     JPanel card2;
     JPanel card3;
     static Container globalPane;
+    JCheckBox senderAdapter;
+    JCheckBox receiverAdapter;
     
     String domain;
     String user;
     String password;
     String attribute;
+    Boolean senderSelected;
+    Boolean receiverSelected;
     
     Boolean resultPane = false;
     
@@ -156,7 +165,27 @@ implements ActionListener  {
         txtAttribute = new JTextField("XI.XFileTargetURL", 30);
         card2.add(txtAttribute);
         txtAttribute.addKeyListener(keyListener);
+        
+        card2.add(new Label("Adapter Type"));
+        
+        senderAdapter = new JCheckBox("Sender");
+        senderAdapter.setMnemonic(KeyEvent.VK_C);
+        senderAdapter.setSelected(true);
+        card2.add(senderAdapter);
+        senderSelected = true;
+        
+        senderAdapter.addActionListener(this);
+        
+        
+        receiverAdapter = new JCheckBox("Receiver");
+        receiverAdapter.setMnemonic(KeyEvent.VK_C);
+        receiverAdapter.setSelected(false);
+        card2.add(receiverAdapter);
+        receiverSelected = false;
+        
+        receiverAdapter.addActionListener(this);
 
+        
         
         tabbedPane.addTab(TEXTPANEL, card2);
         tabbedPane.addTab(BUTTONPANEL, card1);
@@ -216,9 +245,31 @@ implements ActionListener  {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		
 
+        if (e.getSource() == senderAdapter) {
+
+        	
+        	print("SENDER" + e.getActionCommand() );
+        	AbstractButton abstractButton = (AbstractButton) e.getSource();    
+        	senderSelected = abstractButton.getModel().isSelected();
+                     	
+        	
+        
+        }
+		
+        else        if (e.getSource() == receiverAdapter) {
+        	
+        	print("RECEIVER"+ e.getActionCommand());;
+        	AbstractButton abstractButton = (AbstractButton) e.getSource();    
+       	 	receiverSelected = abstractButton.getModel().isSelected();
+         	
+        }
+
+        
+        
         //Handle open button action.
-        if (e.getSource() == openButton) {
+        else        if (e.getSource() == openButton) {
         	
             int returnVal = fc.showOpenDialog(XlinkPropReadGUI.this);
  
@@ -238,76 +289,9 @@ implements ActionListener  {
 
 					while ((line1 = br1.readLine()) != null) {
 						String server = line1.trim();
-
 						System.out.println("***Checking server: " + server );
-
-						List<String> ActiveAdapterList = new ArrayList<String>();
-						String url = "smb://" + line1.trim() + XL0_PATH;
-						String activeurl = "smb://" + line1.trim()
-								+ XL0_ACTIVE_ADAPTER_PATH;
-
-						NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(
-								domain, user, password);
-						SmbFile dirAdapters = new SmbFile(url, auth);
-						SmbFile dirActiveAdapters = new SmbFile(activeurl, auth);
-
-						try {
-
-							retriveActiveAdapters(ActiveAdapterList, activeurl,
-									dirActiveAdapters);
-
-							for (SmbFile f : dirAdapters.listFiles()) {
-								if (f.isFile()
-										&& (f.getName().contains("SEND") || f.getName()
-												.contains("SND"))
-										&& (!f.getName().contains("TEMPLATE"))
-										&& (!f.getName().contains("HOUSEKEEPING"))) {
-
-									InputStream is = f.getInputStream();
-
-									BufferedReader reader = null;
-									reader = new BufferedReader(new InputStreamReader(is));
-									String line = reader.readLine();
-									while (line != null) {
-
-										if (line.contains(attribute) && !line.contains(ATTR_VAL_TO_CHECK)) {
-
-											String fileName = f.getName().replace(
-													PROPERTIES, "");
-
-											if (StringExistsInActiveAdapterList(fileName,
-													ActiveAdapterList)) {
-												System.out.println(fileName);
-												System.out.println(line);
-												
-								XlinkData adapterProperty = new XlinkData();												
-								adapterProperty.setServer(server);
-								adapterProperty.setAdapter(fileName);
-								adapterProperty.setAttribute1(line.replace(attribute+"=",""));
-
-								AdapterPropertiesList.add(adapterProperty);
-											}
-											break;
-										}
-										try {
-											line = reader.readLine();
-										} catch (Exception e1) {
-										}
-									}
-
-								}
-							}
-						} catch (Exception e1) {
-							System.out.println("Error connecting server: " + line1.trim());
-							
-						}
-
+						retrieveRemoteXlinkValues( server);
 					}					
-					
-
-		        
-					
-					
 				} catch (FileNotFoundException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -320,7 +304,12 @@ implements ActionListener  {
 //                log.append("Open command cancelled by user." + newline);
             }
 //            log.setCaretPosition(log.getDocument().getLength());
-        } 		
+        
+        	
+
+        
+
+
         System.out.println("Showing Result: " );		
 		resultPane = true;
 		frame.getContentPane().remove(frame);
@@ -334,8 +323,6 @@ implements ActionListener  {
 		DefaultTableModel tableModel = new DefaultTableModel(col, 0);
 		
 		final JTable table = new JTable(tableModel);
-		XlinkData adapterProperty = new XlinkData();		
-		
 		for (int i = 0; i < AdapterPropertiesList.size(); i++){
 			String localServer = AdapterPropertiesList.get(i).getServer();
 			String localAdapter = AdapterPropertiesList.get(i).getAdapter();
@@ -380,19 +367,136 @@ implements ActionListener  {
 	    frame.pack();
 	    frame.setVisible(true);	
 	    
+        } 	
+	}
+	
+	 private void print(String string) {
+		 System.out.println(string);
 		
 	}
 
+	public void itemStateChanged(ItemEvent e) {
+		 
+		 System.out.println("ATISHA");
+	
+		   Object source = e.getItemSelectable();
 
-		private static void retriveActiveAdapters(List<String> ActiveAdapterList,
+	        if (source == senderAdapter && e.getStateChange() == ItemEvent.DESELECTED ) {
+	        	senderSelected = false;	        	
+	        }
+	        else if(source == senderAdapter && e.getStateChange() == ItemEvent.SELECTED){
+	        	senderSelected = true;	
+	        }
+	        else if(source == receiverAdapter && e.getStateChange() == ItemEvent.DESELECTED){
+	        	receiverSelected = false;	
+	        }
+	        else if(source == receiverAdapter && e.getStateChange() == ItemEvent.SELECTED){
+	        	receiverSelected = true;	
+	        }
+	        
+		 
+	 
+	 }
+
+	private void retrieveRemoteXlinkValues( String server)
+			throws MalformedURLException {
+		List<String> ActiveAdapterList = new ArrayList<String>();
+		
+		for (int i = 0;i<1;i++){
+		
+		String XLPATH = "//f$//sap//xlink//XL"+i+"//Configuration/";
+		String url = "smb://" + server + XLPATH;
+		String activeurl = "smb://" + server + "//f$//sap//xlink//XL"+i+"//Data/";
+
+		NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(
+				domain, user, password);
+		
+
+		try {
+
+			SmbFile dirAdapters = new SmbFile(url, auth);
+			SmbFile dirActiveAdapters = new SmbFile(activeurl, auth);			
+			
+			retriveActiveAdapters(ActiveAdapterList, activeurl,
+					dirActiveAdapters);
+
+			for (SmbFile f : dirAdapters.listFiles()) {
+				if (senderSelected && isSender(f)
+				|| receiverSelected && 	isReceiver(f)
+				) {
+
+					InputStream is = f.getInputStream();
+
+					BufferedReader reader = null;
+					reader = new BufferedReader(new InputStreamReader(is));
+					String line = reader.readLine();
+					while (line != null) {
+
+						if (line.contains(attribute) && !line.contains(ATTR_VAL_TO_CHECK)) {
+
+							String fileName = f.getName().replace(
+									PROPERTIES, "");
+
+							if (StringExistsInActiveAdapterList(fileName,
+									ActiveAdapterList)) {
+								System.out.println(fileName);
+								System.out.println(line);
+								
+				XlinkData adapterProperty = new XlinkData();												
+				adapterProperty.setServer(server);
+				adapterProperty.setAdapter(fileName);
+				adapterProperty.setAttribute1(line.replace(attribute+"=",""));
+
+				AdapterPropertiesList.add(adapterProperty);
+							}
+							break;
+						}
+						try {
+							line = reader.readLine();
+						} catch (Exception e1) {
+						}
+					}
+
+				}
+			}
+		} catch (Exception e1) {
+			System.out.println("Error connecting server: " + server);
+			
+		}
+		
+		}
+		
+		
+	}
+
+	private boolean isSender(SmbFile f) throws SmbException {
+		return f.isFile()
+				&& (f.getName().contains("SEND") || f.getName()
+						.contains("SND"))
+				&& (!f.getName().contains("TEMPLATE"))
+				&& (!f.getName().contains("HOUSEKEEPING"));
+	}
+
+	private boolean isReceiver(SmbFile f) throws SmbException {
+		return f.isFile()
+				&& (f.getName().contains("RCV") || f.getName()
+						.contains("RECEIVER"))
+				&& (!f.getName().contains("RECV"))
+				&& (!f.getName().contains("RCVR"));
+	}
+	
+
+		private void retriveActiveAdapters(List<String> ActiveAdapterList,
 				String activeurl, SmbFile dirActiveAdapters) throws SmbException {
 			
 		try{	
 			for (SmbFile fileactiveAdapter : dirActiveAdapters.listFiles()) {
 				String activeAdapterName = fileactiveAdapter.toString();
-				if (fileactiveAdapter.isFile()
-						&& (activeAdapterName.contains("SEND") || activeAdapterName
-								.contains("SND"))) {
+				if (senderSelected && isSender(fileactiveAdapter)
+						|| receiverSelected && 	isReceiver(fileactiveAdapter)
+						)
+				
+				{
 					ActiveAdapterList.add(activeAdapterName.trim().replace(
 							activeurl, "").toUpperCase().replace(".DAT", "").replace("_ID", ""));
 				}
@@ -453,8 +557,9 @@ implements ActionListener  {
 		                
 		                
 		        }
-		        
-		    }
+		
+		
+}
 		    
 		    	
 
