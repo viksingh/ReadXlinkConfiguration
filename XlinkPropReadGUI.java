@@ -147,12 +147,12 @@ implements ActionListener  {
         card2 = new JPanel(new GridLayout(0,1,2,2));
         
         card2.add(new Label("Domain"));
-        txtDomain = new JTextField("NESTLE", 30); 
+        txtDomain = new JTextField("DOMAIN", 30); 
         card2.add(txtDomain);
         txtDomain.addKeyListener(keyListener);
         
         card2.add(new Label("User"));
-        txtUser = new JTextField("adm2xxxxx", 30);
+        txtUser = new JTextField("user", 30);
         card2.add(txtUser);
         txtUser.addKeyListener(keyListener);
 
