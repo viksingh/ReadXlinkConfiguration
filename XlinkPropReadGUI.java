@@ -61,7 +61,7 @@ implements ActionListener  {
 	private static final String PROPERTIES = ".properties";
 	private static final String XL0_ACTIVE_ADAPTER_PATH = "//f$//sap//xlink//XL0//Data/";
 	private static final String XL0_PATH = "//f$//sap//xlink//XL0//Configuration/";
-	private static final String ATTR_VAL_TO_CHECK = "Xhttps://ebswebdisp.nestle.com:56801/XIAxisAdapter/MessageServlet";
+	private static final String ATTR_VAL_TO_CHECK = "Xhttps://server:56801/XIAxisAdapter/MessageServlet";
     JTextField txtDomain;
     JTextField txtUser;
     JTextField txtPassword;
