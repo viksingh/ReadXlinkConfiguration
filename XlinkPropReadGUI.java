@@ -28,6 +28,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -65,6 +66,7 @@ implements ActionListener  {
     JTextField txtUser;
     JTextField txtPassword;
     JTextField txtAttribute;
+    JLabel lblFilePath;    
     JPasswordField passwordField;
     JTabbedPane tabbedPane;
     List<XlinkData> AdapterPropertiesList = new ArrayList<XlinkData>();
@@ -76,6 +78,8 @@ implements ActionListener  {
     static Container globalPane;
     JCheckBox senderAdapter;
     JCheckBox receiverAdapter;
+    JButton processButton;
+    File file;
     
     String domain;
     String user;
@@ -112,7 +116,7 @@ implements ActionListener  {
     	        password = passwordField.getText();
     	        attribute = txtAttribute.getText();
     	        
-//    	        System.out.println("Password is" + password);
+
     	        
     	      }
     	    };
@@ -126,20 +130,19 @@ implements ActionListener  {
         fc.setSelectedFile(new File("C:\\Temp\\xlinklist_small.txt"));
         
         openButton = new JButton("Upload list of servers...");
+        openButton.setPreferredSize(new Dimension(400, 40));
         openButton.addActionListener(this);        
-        
-        //Create the "cards".
-        card1 = new JPanel() {
-            //Make the panel wider than it really needs, so
-            //the window's wide enough for the tabs to stay
-            //in one row.
-            public Dimension getPreferredSize() {
-                Dimension size = super.getPreferredSize();
-                size.width += extraWindowWidth;
-                return size;
-            }
-        };
+        card1 = new JPanel(new GridLayout(0,1,45,65));
         card1.add(openButton);
+        
+        lblFilePath = new JLabel("");
+        card1.add(lblFilePath);
+        
+        processButton = new JButton("Process");
+        processButton.addActionListener(this);              
+        card1.add(processButton);
+        
+        
 
         card2 = new JPanel(new GridLayout(0,1,2,2));
         
@@ -149,12 +152,12 @@ implements ActionListener  {
         txtDomain.addKeyListener(keyListener);
         
         card2.add(new Label("User"));
-        txtUser = new JTextField("adm2singh4", 30);
+        txtUser = new JTextField("adm2xxxxx", 30);
         card2.add(txtUser);
         txtUser.addKeyListener(keyListener);
 
         card2.add(new Label("Password"));
-        passwordField = new JPasswordField("Saregama11@", 11);
+        passwordField = new JPasswordField("", 11);
         passwordField.setEchoChar('*');
         card2.add(passwordField);
         passwordField.addKeyListener(keyListener);
@@ -274,12 +277,19 @@ implements ActionListener  {
             int returnVal = fc.showOpenDialog(XlinkPropReadGUI.this);
  
             if (returnVal == JFileChooser.APPROVE_OPTION) {
-                File file = fc.getSelectedFile();
+                file = fc.getSelectedFile();
+                lblFilePath.setText(file.getAbsolutePath());
+                //Display the window.
+                frame.pack();
+                frame.setVisible(true);
                 
-                //This is where a real application would open the file.
-//                log.append("Opening: " + file.getName() + "." + newline);
-                try {
-                	System.out.println("File is : " + file);
+                
+            }} else if ( e.getSource() == processButton ){
+            	
+            	
+
+            	try {
+
 					InputStream is1 = new FileInputStream(file);
 
 
@@ -289,7 +299,7 @@ implements ActionListener  {
 
 					while ((line1 = br1.readLine()) != null) {
 						String server = line1.trim();
-						System.out.println("***Checking server: " + server );
+
 						retrieveRemoteXlinkValues( server);
 					}					
 				} catch (FileNotFoundException e1) {
@@ -300,17 +310,12 @@ implements ActionListener  {
 					e1.printStackTrace();
 				}
                 
-            } else {
-//                log.append("Open command cancelled by user." + newline);
-            }
-//            log.setCaretPosition(log.getDocument().getLength());
-        
-        	
-
-        
+                	
+            	
 
 
-        System.out.println("Showing Result: " );		
+
+        		
 		resultPane = true;
 		frame.getContentPane().remove(frame);
 		
@@ -333,12 +338,16 @@ implements ActionListener  {
 			
 		}
         table.setPreferredScrollableViewportSize(table.getPreferredSize());
-        table.setFillsViewportHeight(true);	
+        table.setFillsViewportHeight(true);
+        
         
         table.getColumnModel().getColumn(0).setMinWidth(10);
-        table.getColumnModel().getColumn(1).setMinWidth(50);
-        table.getColumnModel().getColumn(2).setMinWidth(150);
-        table.getColumnModel().getColumn(2).setMaxWidth(Integer.MAX_VALUE);
+        table.getColumnModel().getColumn(1).setMinWidth(150);
+        table.getColumnModel().getColumn(2).setMinWidth(290);
+        
+        
+        int height = 25 * ( AdapterPropertiesList.size() + 1 );
+        frame.setPreferredSize(new Dimension(700,height));
         frame.pack();
         
         
@@ -363,46 +372,25 @@ implements ActionListener  {
 		
 		JScrollPane scrollPane = new JScrollPane(table);		
 		frame.add(scrollPane, BorderLayout.CENTER);
-	    frame.setSize(300, 150);
+	    frame.setSize(400, 150);
 	    frame.pack();
 	    frame.setVisible(true);	
 	    
+            }	    
         } 	
-	}
+                    
+	
 	
 	 private void print(String string) {
-		 System.out.println(string);
+//		 System.out.println(string);
 		
 	}
-
-	public void itemStateChanged(ItemEvent e) {
-		 
-		 System.out.println("ATISHA");
-	
-		   Object source = e.getItemSelectable();
-
-	        if (source == senderAdapter && e.getStateChange() == ItemEvent.DESELECTED ) {
-	        	senderSelected = false;	        	
-	        }
-	        else if(source == senderAdapter && e.getStateChange() == ItemEvent.SELECTED){
-	        	senderSelected = true;	
-	        }
-	        else if(source == receiverAdapter && e.getStateChange() == ItemEvent.DESELECTED){
-	        	receiverSelected = false;	
-	        }
-	        else if(source == receiverAdapter && e.getStateChange() == ItemEvent.SELECTED){
-	        	receiverSelected = true;	
-	        }
-	        
-		 
-	 
-	 }
 
 	private void retrieveRemoteXlinkValues( String server)
 			throws MalformedURLException {
 		List<String> ActiveAdapterList = new ArrayList<String>();
 		
-		for (int i = 0;i<1;i++){
+		for (int i = 0;i<2;i++){
 		
 		String XLPATH = "//f$//sap//xlink//XL"+i+"//Configuration/";
 		String url = "smb://" + server + XLPATH;
@@ -439,8 +427,6 @@ implements ActionListener  {
 
 							if (StringExistsInActiveAdapterList(fileName,
 									ActiveAdapterList)) {
-								System.out.println(fileName);
-								System.out.println(line);
 								
 				XlinkData adapterProperty = new XlinkData();												
 				adapterProperty.setServer(server);
@@ -460,7 +446,7 @@ implements ActionListener  {
 				}
 			}
 		} catch (Exception e1) {
-			System.out.println("Error connecting server: " + server);
+
 			
 		}
 		
@@ -503,7 +489,7 @@ implements ActionListener  {
 
 			}
 		} catch (Exception e){
-			System.out.println("Error retrieving active adapters: " + activeurl);		
+		
 		}
 		
 		}
